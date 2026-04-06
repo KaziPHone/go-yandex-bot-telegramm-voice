@@ -123,7 +123,7 @@ func (h *Handler) onVoice(c tele.Context) error {
 	if err != nil {
 		log.Printf("failed to download voice file: %v", err)
 		// фолбэк: поставить в очередь по FileID
-	h.queue.Enqueue(&queue.Task{UserID: user.ID, MeetingID: meetingID, FileID: voice.FileID})
+		h.queue.Enqueue(&queue.Task{UserID: user.ID, MeetingID: meetingID, FileID: voice.FileID})
 	} else {
 		// попытка конвертировать в Opus
 		ctxConv, cancel := context.WithTimeout(context.Background(), 30*time.Second)
