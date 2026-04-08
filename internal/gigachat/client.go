@@ -24,6 +24,18 @@ type clientGiga struct {
 	httpClient *http.Client
 }
 
+type requestPayload struct {
+	Model          string    `json:"model"`
+	Messages       []message `json:"messages"`
+	Stream         bool      `json:"stream"`
+	UpdateInterval int       `json:"update_interval"`
+}
+
+type message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
 func NewClient() Client {
 	return &clientGiga{
 		baseURL:    os.Getenv("GIGA_BASE_URL"),
@@ -45,21 +57,23 @@ func (m *clientGiga) Summarize(ctx context.Context, text string) (string, error)
 	return m.parsed(body)
 }
 
-func (m *clientGiga) sendRequestToGiga(systemPromt, userContent string) ([]byte, error) {
+func (m *clientGiga) sendRequestToGiga(systemPrompt, userContent string) ([]byte, error) {
+	payload := requestPayload{
+		Model: "GigaChat",
+		Messages: []message{
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: userContent},
+		},
+		Stream:         false,
+		UpdateInterval: 0,
+	}
 
-	bodyStr := fmt.Sprintf(`{
-		"model": "GigaChat",
-		"messages": [
-			{"role": "system", "content": "%s"},
-			{"role": "user", "content": "%s"}
-		],
-		"stream": false,
-		"update_interval": 0
-	}`, systemPromt, userContent)
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
 
-	payload := strings.NewReader(bodyStr)
-	req, err := http.NewRequest("POST", m.baseURL, payload)
-
+	req, err := http.NewRequest("POST", m.baseURL, strings.NewReader(string(bodyBytes)))
 	if err != nil {
 		return nil, err
 	}
